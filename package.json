@@ -1,0 +1,30 @@
+{
+  "name": "karpitch",
+  "version": "1.0.0",
+  "description": "Karaoke player with pitch control",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "parcel index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RomanFrom710/karpitch.git"
+  },
+  "browserslist": [
+    "last 1 Chrome versions"
+  ],
+  "author": "Roman Chaley",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RomanFrom710/karpitch/issues"
+  },
+  "homepage": "https://github.com/RomanFrom710/karpitch#readme",
+  "dependencies": {
+    "midifile": "^2.0.0",
+    "pitchy": "^1.0.4",
+    "webaudiofont": "^2.5.49"
+  },
+  "devDependencies": {
+    "parcel": "^1.12.4"
+  }
+}
