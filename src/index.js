@@ -1,6 +1,9 @@
-import MidiFile from 'midifile';
-import windows1251 from 'windows-1251';
 import {findPitch} from 'pitchy';
+import MidiPlayer from 'midi-player-js';
+import Soundfont from 'soundfont-player';
+
+import instrumentNames from './instruments';
+import {PROGRAM_CHANGE, NOTE_ON, NOTE_OFF} from './midi-events';
 
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
@@ -19,20 +22,46 @@ function updatePitch(analyserNode, sampleRate) {
   window.requestAnimationFrame(() => updatePitch(analyserNode, sampleRate));
 }
 
+let audioContext;
+
 document.getElementById('drop').addEventListener('dragenter', (e) => e.preventDefault());
 document.getElementById('drop').addEventListener('dragover', (e) => e.preventDefault());
 document.getElementById('drop').addEventListener('drop', async (e) => {
+  start();
   e.preventDefault();
-  console.log(e.dataTransfer.files[0]);
   const arrayBuffer = await e.dataTransfer.files[0].arrayBuffer();
-  const file = new MidiFile(arrayBuffer);
-  const lyrics = file.getLyrics();
-  const text = lyrics.map((item) => item.text).join('');
-  document.getElementById('lyrics').innerHTML = windows1251.decode(text);
+
+  const instruments = {};
+  const loadPromises = {};
+  const loadInstrument = async (midiProgram, track) => {
+    if (!loadPromises[midiProgram]) {
+      loadPromises[midiProgram] = Soundfont.instrument(audioContext, instrumentNames[midiProgram], {soundfont: 'FluidR3_GM'});
+    }
+    instruments[track] = await loadPromises[midiProgram];
+  };
+
+  const midiFile = new MidiPlayer.Player();
+  midiFile.loadArrayBuffer(arrayBuffer);
+  const notesOn = {};
+  midiFile.on('midiEvent', (event) => {
+    const code = `${event.track}_${event.noteNumber}`;
+    if (event.name === NOTE_ON && event.velocity > 0) {
+      notesOn[code] = instruments[event.track].play(event.noteNumber);
+    } else if (event.name === NOTE_OFF || (event.name === NOTE_ON && event.velocity === 0)) {
+      notesOn[code] && notesOn[code].stop();
+    }
+  });
+
+  midiFile.getEvents()
+    .map((track) => track.find((e) => e.name === PROGRAM_CHANGE))
+    .forEach((event) => event && loadInstrument(event.value, event.track));
+
+  await Promise.all(Object.values(loadPromises));
+  midiFile.play();
 });
 
 async function start() {
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
   const analyserNode = audioContext.createAnalyser();
 
   const stream = await navigator.mediaDevices.getUserMedia({audio: true})
@@ -40,6 +69,3 @@ async function start() {
   sourceNode.connect(analyserNode);
   updatePitch(analyserNode, audioContext.sampleRate);
 }
-
-
-document.getElementById('button').addEventListener('click', start);
