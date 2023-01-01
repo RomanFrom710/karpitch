@@ -26,6 +26,6 @@
     "windows-1251": "^1.0.0"
   },
   "devDependencies": {
-    "parcel": "^1.12.4"
+    "parcel": "^2.8.2"
   }
 }
